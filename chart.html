@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Line Chart</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+    <a href="calendar.html">Calendar</a>
+    <a href="chart.html" aria-current="page">Line Chart</a>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>Line Chart</h1>
+      <p class="small">Data source: <code>data/line-data.csv</code> (columns: date,value).</p>
+      <canvas id="lineChart" width="1000" height="450" aria-label="line chart"></canvas>
+    </section>
+  </main>
+
+  <script src="scripts/chart.js"></script>
+</body>
+</html>
