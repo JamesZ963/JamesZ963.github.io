@@ -1,6 +1,5 @@
 const canvas = document.getElementById('lineChart');
 const ctx = canvas.getContext('2d');
-let latestPoints = [];
 
 function parseCsv(csvText) {
   const [headerLine, ...lines] = csvText.trim().split(/\r?\n/);
@@ -23,29 +22,18 @@ function parseCsv(csvText) {
     .sort((a, b) => a.date - b.date);
 }
 
-function getThemeColors() {
-  const styles = getComputedStyle(document.documentElement);
-  return {
-    bg: styles.getPropertyValue('--canvas-bg').trim() || '#ffffff',
-    axis: styles.getPropertyValue('--axis').trim() || '#d1d5db',
-    text: styles.getPropertyValue('--text').trim() || '#374151',
-    accent: styles.getPropertyValue('--accent').trim() || '#2b6de0'
-  };
-}
-
 function drawChart(points) {
   const width = canvas.width;
   const height = canvas.height;
   const pad = { top: 35, right: 30, bottom: 45, left: 55 };
-  const theme = getThemeColors();
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = theme.bg;
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
   if (points.length === 0) {
-    ctx.fillStyle = theme.text;
-    ctx.font = '16px Calibri, "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = '#111827';
+    ctx.font = '16px Arial';
     ctx.fillText('No valid data found in CSV.', 25, 40);
     return;
   }
@@ -65,7 +53,7 @@ function drawChart(points) {
     return height - pad.bottom - ((val - minValue) / (maxValue - minValue)) * (height - pad.top - pad.bottom);
   };
 
-  ctx.strokeStyle = theme.axis;
+  ctx.strokeStyle = '#d1d5db';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.left, pad.top);
@@ -73,14 +61,14 @@ function drawChart(points) {
   ctx.lineTo(width - pad.right, height - pad.bottom);
   ctx.stroke();
 
-  ctx.fillStyle = theme.text;
-  ctx.font = '12px Calibri, "Microsoft YaHei", sans-serif';
+  ctx.fillStyle = '#374151';
+  ctx.font = '12px Arial';
   ctx.fillText(minValue.toFixed(2), 8, height - pad.bottom);
   ctx.fillText(maxValue.toFixed(2), 8, pad.top + 4);
   ctx.fillText(points[0].date.toISOString().slice(0, 10), pad.left, height - 12);
   ctx.fillText(points[points.length - 1].date.toISOString().slice(0, 10), width - pad.right - 85, height - 12);
 
-  ctx.strokeStyle = theme.accent;
+  ctx.strokeStyle = '#2b6de0';
   ctx.lineWidth = 2;
   ctx.beginPath();
   points.forEach((point, index) => {
@@ -94,7 +82,7 @@ function drawChart(points) {
   });
   ctx.stroke();
 
-  ctx.fillStyle = theme.accent;
+  ctx.fillStyle = '#2b6de0';
   points.forEach((point) => {
     const x = xScale(point.date.getTime());
     const y = yScale(point.value);
@@ -104,13 +92,9 @@ function drawChart(points) {
   });
 }
 
-document.addEventListener('themechange', () => {
-  drawChart(latestPoints);
-});
-
 (async function init() {
   const response = await fetch('data/line-data.csv');
   const csvText = await response.text();
-  latestPoints = parseCsv(csvText);
-  drawChart(latestPoints);
+  const points = parseCsv(csvText);
+  drawChart(points);
 })();

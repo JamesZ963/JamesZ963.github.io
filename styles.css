@@ -1,20 +1,6 @@
 :root {
-  color-scheme: dark;
-  font-family: Calibri, "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
-  --bg: #0b1220;
-  --card: #111a2b;
-  --accent: #6fa3ff;
-  --accent-soft: #1e335c;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --border: #334155;
-  --input-bg: #0f172a;
-  --canvas-bg: #0b1220;
-  --axis: #475569;
-}
-
-:root[data-theme="light"] {
   color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
   --bg: #f7f7fb;
   --card: #ffffff;
   --accent: #2b6de0;
@@ -22,9 +8,6 @@
   --text: #1f2937;
   --muted: #6b7280;
   --border: #d1d5db;
-  --input-bg: #ffffff;
-  --canvas-bg: #ffffff;
-  --axis: #d1d5db;
 }
 
 * { box-sizing: border-box; }
@@ -42,8 +25,6 @@ body {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 .top-nav a {
@@ -53,12 +34,8 @@ body {
 }
 
 .top-nav a[aria-current="page"] {
-  color: var(--accent);
+  color: #0f3a93;
   text-decoration: underline;
-}
-
-.theme-toggle {
-  margin-left: 0.5rem;
 }
 
 main {
@@ -84,11 +61,10 @@ main {
 
 button, select, input {
   font: inherit;
-  color: var(--text);
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--input-bg);
+  background: white;
 }
 
 button {
@@ -113,7 +89,7 @@ button:hover {
 .weekday-header,
 .day-cell {
   border: 1px solid var(--border);
-  background: var(--card);
+  background: white;
   border-radius: 8px;
   min-height: 95px;
   padding: 0.35rem;
@@ -152,7 +128,7 @@ button:hover {
 .week-day {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--card);
+  background: white;
   padding: 0.5rem;
 }
 
@@ -161,22 +137,7 @@ canvas {
   max-width: 1000px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--canvas-bg);
-}
-
-.hero {
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  padding: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.hero.live {
-  background: rgba(34, 197, 94, 0.15);
-}
-
-.hero.offline {
-  background: rgba(148, 163, 184, 0.2);
+  background: white;
 }
 
 .small {
