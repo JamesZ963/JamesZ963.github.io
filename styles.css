@@ -233,3 +233,43 @@ canvas {
 .streams-table th {
   background: var(--accent-soft);
 }
+
+
+#searchResults {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.search-result-item {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+}
+
+.search-result-item h3 {
+  margin: 0 0 0.35rem;
+}
+
+.search-result-item p {
+  margin: 0.2rem 0;
+}
+
+mark {
+  background: #facc15;
+  color: #111827;
+  padding: 0 0.15rem;
+  border-radius: 2px;
+}
+
+.pagination {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pagination .active-page {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}

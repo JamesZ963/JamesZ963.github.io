@@ -1,12 +1,16 @@
 const MIN_DATE = new Date('2021-01-01T00:00:00');
 const MAX_EVENTS_PER_DAY = 3;
+const SEARCH_PAGE_SIZE = 10;
 
 const state = {
   currentDate: new Date(),
   events: [],
   searchQuery: '',
   quarterCache: new Map(),
-  anchoredEventId: null
+  anchoredEventId: null,
+  searchMode: false,
+  searchResults: [],
+  searchPage: 1
 };
 
 const calendarEl = document.getElementById('calendar');
@@ -15,6 +19,12 @@ const datePickerEl = document.getElementById('datePicker');
 const prevBtnEl = document.getElementById('prevBtn');
 const nextBtnEl = document.getElementById('nextBtn');
 const searchInputEl = document.getElementById('searchInput');
+const searchBtnEl = document.getElementById('searchBtn');
+const exitSearchBtnEl = document.getElementById('exitSearchBtn');
+const searchResultsSectionEl = document.getElementById('searchResultsSection');
+const searchResultsEl = document.getElementById('searchResults');
+const searchPaginationEl = document.getElementById('searchPagination');
+const calendarControlsEl = document.getElementById('calendarControls');
 const popupEl = document.getElementById('eventPopup');
 
 function startOfDay(date) {
@@ -27,6 +37,15 @@ function decodeUtf8(buffer) {
 
 function formatCurrency(value) {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function splitCsvLine(line) {
@@ -158,6 +177,13 @@ async function ensureEventsForCurrentView() {
   state.events = [...state.quarterCache.values()].flat();
 }
 
+async function ensureEventsForSearch() {
+  const currentYear = new Date().getFullYear() + 1;
+  const searchEnd = new Date(currentYear, 11, 31);
+  await Promise.all(quarterKeysInRange(MIN_DATE, searchEnd).map((key) => loadQuarterEvents(key)));
+  state.events = [...state.quarterCache.values()].flat();
+}
+
 function clampToMinDate(date) {
   return date < MIN_DATE ? new Date(MIN_DATE) : date;
 }
@@ -195,6 +221,7 @@ function popupHtml(event) {
 
   const start = event.startDate.toISOString().slice(0, 10);
   lines.push(`<span><b>Date:</b> ${start}</span>`);
+
   if (event.tags.length) lines.push(`<span><b>Tags:</b> ${event.tags.join(', ')}</span>`);
   if (event.numberOfChats !== null) lines.push(`<span><b>Chats:</b> ${event.numberOfChats}</span>`);
   if (event.revenue !== null) lines.push(`<span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span>`);
@@ -283,6 +310,121 @@ function renderMonth() {
   applySelectedEventStyling();
 }
 
+function highlightMatch(text, query) {
+  const safeText = escapeHtml(text);
+  if (!query) return safeText;
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedQuery})`, 'ig');
+  return safeText.replace(regex, '<mark>$1</mark>');
+}
+
+function renderSearchPagination(totalPages) {
+  if (totalPages <= 1) {
+    searchPaginationEl.replaceChildren();
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  const prev = document.createElement('button');
+  prev.type = 'button';
+  prev.textContent = 'Previous';
+  prev.disabled = state.searchPage === 1;
+  prev.addEventListener('click', () => {
+    state.searchPage -= 1;
+    renderSearchResults();
+  });
+  frag.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i += 1) {
+    const pageBtn = document.createElement('button');
+    pageBtn.type = 'button';
+    pageBtn.textContent = String(i);
+    if (i === state.searchPage) pageBtn.classList.add('active-page');
+    pageBtn.addEventListener('click', () => {
+      state.searchPage = i;
+      renderSearchResults();
+    });
+    frag.appendChild(pageBtn);
+  }
+
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.textContent = 'Next';
+  next.disabled = state.searchPage === totalPages;
+  next.addEventListener('click', () => {
+    state.searchPage += 1;
+    renderSearchResults();
+  });
+  frag.appendChild(next);
+
+  searchPaginationEl.replaceChildren(frag);
+}
+
+function renderSearchResults() {
+  const total = state.searchResults.length;
+  const totalPages = Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE));
+  state.searchPage = Math.min(state.searchPage, totalPages);
+
+  const startIndex = (state.searchPage - 1) * SEARCH_PAGE_SIZE;
+  const pageItems = state.searchResults.slice(startIndex, startIndex + SEARCH_PAGE_SIZE);
+
+  if (total === 0) {
+    searchResultsEl.innerHTML = '<div class="small">No results found.</div>';
+    searchPaginationEl.replaceChildren();
+    return;
+  }
+
+  const query = state.searchQuery.trim();
+  searchResultsEl.innerHTML = pageItems.map((event) => {
+    const date = event.startDate.toISOString().slice(0, 10);
+    const games = event.games.join(', ');
+    const tags = event.tags.join(', ');
+    const summary = event.summary || '-';
+    return `<article class="search-result-item">
+      <h3>${highlightMatch(event.title, query)}</h3>
+      <p><b>Date:</b> ${date}</p>
+      <p><b>Game:</b> ${highlightMatch(games, query)}</p>
+      <p><b>Tags:</b> ${highlightMatch(tags || '-', query)}</p>
+      <p><b>Summary:</b> ${highlightMatch(summary, query)}</p>
+    </article>`;
+  }).join('');
+
+  renderSearchPagination(totalPages);
+}
+
+function enterSearchMode() {
+  state.searchMode = true;
+  calendarEl.hidden = true;
+  periodTitleEl.hidden = true;
+  calendarControlsEl.hidden = true;
+  popupEl.hidden = true;
+  state.anchoredEventId = null;
+  searchResultsSectionEl.hidden = false;
+  exitSearchBtnEl.hidden = false;
+}
+
+function exitSearchMode() {
+  state.searchMode = false;
+  searchResultsSectionEl.hidden = true;
+  exitSearchBtnEl.hidden = true;
+  calendarEl.hidden = false;
+  periodTitleEl.hidden = false;
+  calendarControlsEl.hidden = false;
+}
+
+async function runSearch() {
+  state.searchQuery = searchInputEl.value.trim();
+  if (!state.searchQuery) {
+    return;
+  }
+
+  await ensureEventsForSearch();
+  state.searchResults = getFilteredEvents().sort((a, b) => (b.startDate - a.startDate) || (a.sequence - b.sequence));
+  state.searchPage = 1;
+  enterSearchMode();
+  renderSearchResults();
+}
+
 async function renderCalendar() {
   await ensureEventsForCurrentView();
   renderMonth();
@@ -298,12 +440,18 @@ async function moveMonth(direction) {
 
 prevBtnEl.addEventListener('click', async () => moveMonth(-1));
 nextBtnEl.addEventListener('click', async () => moveMonth(1));
+searchBtnEl.addEventListener('click', async () => runSearch());
 
-searchInputEl.addEventListener('input', (event) => {
-  state.searchQuery = event.target.value;
-  state.anchoredEventId = null;
-  popupEl.hidden = true;
-  renderMonth();
+searchInputEl.addEventListener('keydown', async (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    await runSearch();
+  }
+});
+
+exitSearchBtnEl.addEventListener('click', async () => {
+  exitSearchMode();
+  await renderCalendar();
 });
 
 datePickerEl.addEventListener('change', async (event) => {

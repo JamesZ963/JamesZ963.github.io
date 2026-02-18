@@ -23,8 +23,10 @@
           Search
           <input id="searchInput" type="search" placeholder="Search title/game/tags/summary" />
         </label>
+        <button id="searchBtn" type="button">Search</button>
+        <button id="exitSearchBtn" type="button" hidden>Exit Search</button>
       </div>
-      <div class="controls">
+      <div class="controls" id="calendarControls">
         <label>
           Display month from
           <input id="datePicker" type="date" min="2021-01-01" />
@@ -34,6 +36,11 @@
       </div>
       <h2 id="periodTitle"></h2>
       <div id="calendar"></div>
+      <section id="searchResultsSection" hidden>
+        <h2>Search Results</h2>
+        <div id="searchResults"></div>
+        <div id="searchPagination" class="pagination"></div>
+      </section>
       <div id="eventPopup" class="event-popup" hidden></div>
     </section>
   </main>
