@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+    <a href="calendar.html" aria-current="page">Calendar</a>
+    <a href="chart.html">Stats</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">Switch Theme</button>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>Calendar</h1>
+      <p class="small">Data source: quarter files in <code>data/events-YYYY-Q#.csv</code> (UTF-8). Missing quarter files are treated as no events. Earliest selectable date is 2021-01-01.</p>
+      <div class="controls">
+        <label>
+          Search
+          <input id="searchInput" type="search" placeholder="Search title/game/tags/summary" />
+        </label>
+        <button id="searchBtn" type="button">Search</button>
+        <button id="exitSearchBtn" type="button" hidden>Exit Search</button>
+      </div>
+      <div class="controls" id="calendarControls">
+        <label>
+          Display month from
+          <input id="datePicker" type="date" min="2021-01-01" />
+        </label>
+        <button id="prevBtn" type="button">Previous</button>
+        <button id="nextBtn" type="button">Next</button>
+      </div>
+      <h2 id="periodTitle"></h2>
+      <div id="calendar"></div>
+      <section id="searchResultsSection" hidden>
+        <h2>Search Results</h2>
+        <div id="searchResults"></div>
+        <div id="searchPagination" class="pagination"></div>
+      </section>
+      <div id="eventPopup" class="event-popup" hidden></div>
+    </section>
+  </main>
+
+  <script src="scripts/theme.js"></script>
+  <script src="scripts/calendar.js"></script>
+</body>
+</html>
