@@ -1,5 +1,5 @@
-title,start_date,end_date,start_time,end_time,game,tags,summary,number_of_chats,revenue
-Team Collab,2021-04-22,2021-04-23,21:00,01:00,"Valorant, Just Chatting","collab, fps","Collab stream with guest creators",2440,1120.00
-Launch Event,2021-05-17,2021-05-17,19:30,23:00,"Apex Legends","launch, ranked","Season launch reactions and ranked grind",2750,1435.70
-Half-Year Review,2021-06-30,2021-06-30,18:00,20:30,"Just Chatting","review, goals","Reviewed channel highlights and goals",1175,380.40
-Late Night Q&A,2021-06-30,, , ,"Just Chatting, AMA","qa, 社群",,,
+title,start_date,game,tags,summary,number_of_chats,revenue
+Team Collab,2021-04-22,"Valorant, Just Chatting","collab, fps","Collab stream with guest creators",2440,1120.00
+Launch Event,2021-05-17,"Apex Legends","launch, ranked","Season launch reactions and ranked grind",2750,1435.70
+Half-Year Review,2021-06-30,"Just Chatting","review, goals","Reviewed channel highlights and goals",1175,380.40
+Late Night Q&A,2021-06-30,"Just Chatting, AMA","qa, 社群",,,

@@ -76,20 +76,16 @@ function parseCsv(csvText) {
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
 
       const startDate = new Date(row.start_date);
-      const rawEndDate = row.end_date ? new Date(row.end_date) : null;
       if (Number.isNaN(startDate.getTime())) return null;
 
-      const endDate = rawEndDate && !Number.isNaN(rawEndDate.getTime()) ? rawEndDate : startDate;
       const chats = row.number_of_chats?.trim() ? Number(row.number_of_chats.trim()) : null;
       const revenue = row.revenue?.trim() ? Number(row.revenue.trim()) : null;
 
       return {
         id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
+        sequence: index,
         title: row.title?.trim() || 'Unknown',
         startDate: startOfDay(startDate),
-        endDate: startOfDay(endDate),
-        startTime: row.start_time?.trim() || '',
-        endTime: row.end_time?.trim() || '',
         games: toList(row.game),
         tags: toList(row.tags),
         summary: row.summary?.trim() || '',
@@ -182,7 +178,9 @@ function getFilteredEvents() {
 }
 
 function eventsForDay(day) {
-  return getFilteredEvents().filter((event) => isSameDay(event.startDate, day));
+  return getFilteredEvents()
+    .filter((event) => isSameDay(event.startDate, day))
+    .sort((a, b) => a.sequence - b.sequence);
 }
 
 function hidePopupIfNotAnchored() {
@@ -196,10 +194,7 @@ function popupHtml(event) {
   ];
 
   const start = event.startDate.toISOString().slice(0, 10);
-  const end = event.endDate.toISOString().slice(0, 10);
-  lines.push(`<span><b>Date:</b> ${start === end ? start : `${start} to ${end}`}</span>`);
-
-  if (event.startTime || event.endTime) lines.push(`<span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span>`);
+  lines.push(`<span><b>Date:</b> ${start}</span>`);
   if (event.tags.length) lines.push(`<span><b>Tags:</b> ${event.tags.join(', ')}</span>`);
   if (event.numberOfChats !== null) lines.push(`<span><b>Chats:</b> ${event.numberOfChats}</span>`);
   if (event.revenue !== null) lines.push(`<span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span>`);

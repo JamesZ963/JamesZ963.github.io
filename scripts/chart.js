@@ -62,7 +62,7 @@ function parseCsv(csvText) {
 
   return lines
     .filter(Boolean)
-    .map((line, index) => {
+.map((line, index) => {
       const values = splitCsvLine(line);
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
 
@@ -78,6 +78,7 @@ function parseCsv(csvText) {
 
       return {
         id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
+        sequence: index,
         startDate: startOfDay(startDate),
         title: row.title?.trim() || 'Unknown',
         game: games.length ? games.join(', ') : 'Unknown',
@@ -86,7 +87,7 @@ function parseCsv(csvText) {
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.startDate - b.startDate);
+    .sort((a, b) => (a.startDate - b.startDate) || (a.sequence - b.sequence));
 }
 
 function quarterFromDate(date) {
@@ -234,7 +235,7 @@ function drawChart(events) {
 
 function renderRecentStreamsTable(streams) {
   const latest = [...streams]
-    .sort((a, b) => b.startDate - a.startDate)
+    .sort((a, b) => (b.startDate - a.startDate) || (a.sequence - b.sequence))
     .slice(0, 7);
 
   if (latest.length === 0) {
@@ -261,7 +262,7 @@ function renderRecentStreamsTable(streams) {
 async function ensureDataForRange(startDate, endDate) {
   const keys = quarterKeysInRange(startDate, endDate);
   await Promise.all(keys.map((k) => loadQuarterEvents(k)));
-  state.allEvents = [...state.quarterCache.values()].flat().sort((a, b) => a.startDate - b.startDate);
+  state.allEvents = [...state.quarterCache.values()].flat().sort((a, b) => (a.startDate - b.startDate) || (a.sequence - b.sequence));
 }
 
 function parseRangeInputs() {
