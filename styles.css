@@ -207,3 +207,29 @@ canvas {
 .event-more {
   margin-top: 0.2rem;
 }
+
+
+.streams-section {
+  margin-top: 1.25rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.streams-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+}
+
+.streams-table th,
+.streams-table td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+}
+
+.streams-table th {
+  background: var(--accent-soft);
+}

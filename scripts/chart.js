@@ -5,6 +5,7 @@ const ctx = canvas.getContext('2d');
 const startDateEl = document.getElementById('startDate');
 const endDateEl = document.getElementById('endDate');
 const applyRangeBtnEl = document.getElementById('applyRangeBtn');
+const recentStreamsBodyEl = document.getElementById('recentStreamsBody');
 
 const state = {
   quarterCache: new Map(),
@@ -14,6 +15,10 @@ const state = {
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function decodeUtf8(buffer) {
+  return new TextDecoder('utf-8').decode(buffer);
 }
 
 function splitCsvLine(line) {
@@ -43,37 +48,41 @@ function splitCsvLine(line) {
   return values;
 }
 
+function toList(rawValue) {
+  if (!rawValue) return [];
+  return rawValue.split(',').map((x) => x.trim()).filter(Boolean);
+}
+
 function parseCsv(csvText) {
-  const trimmed = csvText.trim();
+  const trimmed = csvText.replace(/^\uFEFF/, '').trim();
   if (!trimmed) return [];
 
   const [headerLine, ...lines] = trimmed.split(/\r?\n/);
-  const headers = splitCsvLine(headerLine).map((h) => h.toLowerCase());
+  const headers = splitCsvLine(headerLine).map((h) => h.replace(/^\uFEFF/, '').toLowerCase());
 
   return lines
     .filter(Boolean)
-    .map((line) => {
+    .map((line, index) => {
       const values = splitCsvLine(line);
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
 
       const startDate = new Date(row.start_date);
+      if (Number.isNaN(startDate.getTime())) return null;
+
       const chatsRaw = row.number_of_chats?.trim();
       const revenueRaw = row.revenue?.trim();
+      const chats = chatsRaw ? Number(chatsRaw) : null;
+      const revenue = revenueRaw ? Number(revenueRaw) : null;
 
-      if (Number.isNaN(startDate.getTime()) || !chatsRaw || !revenueRaw) {
-        return null;
-      }
-
-      const chats = Number(chatsRaw);
-      const revenue = Number(revenueRaw);
-      if (Number.isNaN(chats) || Number.isNaN(revenue)) {
-        return null;
-      }
+      const games = toList(row.game);
 
       return {
+        id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
         startDate: startOfDay(startDate),
-        numberOfChats: chats,
-        revenue
+        title: row.title?.trim() || 'Unknown',
+        game: games.length ? games.join(', ') : 'Unknown',
+        numberOfChats: Number.isNaN(chats) ? null : chats,
+        revenue: Number.isNaN(revenue) ? null : revenue
       };
     })
     .filter(Boolean)
@@ -115,7 +124,8 @@ async function loadQuarterEvents(key) {
   try {
     const response = await fetch(path);
     if (response.ok) {
-      events = parseCsv(await response.text());
+      const buffer = await response.arrayBuffer();
+      events = parseCsv(decodeUtf8(buffer));
     } else if (response.status !== 404) {
       console.warn(`Failed to load ${path}: HTTP ${response.status}`);
     }
@@ -222,6 +232,32 @@ function drawChart(events) {
   ctx.fillText('Revenue', pad.left + 154, pad.top - 9);
 }
 
+function renderRecentStreamsTable(streams) {
+  const latest = [...streams]
+    .sort((a, b) => b.startDate - a.startDate)
+    .slice(0, 7);
+
+  if (latest.length === 0) {
+    recentStreamsBodyEl.innerHTML = '<tr><td colspan="5" class="small">No stream records in selected range.</td></tr>';
+    return;
+  }
+
+  recentStreamsBodyEl.innerHTML = latest
+    .map((stream) => {
+      const date = stream.startDate.toISOString().slice(0, 10);
+      const chats = stream.numberOfChats === null ? '-' : String(stream.numberOfChats);
+      const revenue = stream.revenue === null ? '-' : String(stream.revenue);
+      return `<tr>
+        <td>${date}</td>
+        <td>${stream.title || 'Unknown'}</td>
+        <td>${stream.game || 'Unknown'}</td>
+        <td>${chats}</td>
+        <td>${revenue}</td>
+      </tr>`;
+    })
+    .join('');
+}
+
 async function ensureDataForRange(startDate, endDate) {
   const keys = quarterKeysInRange(startDate, endDate);
   await Promise.all(keys.map((k) => loadQuarterEvents(k)));
@@ -239,12 +275,16 @@ async function applyRange() {
   const range = parseRangeInputs();
   if (!range) {
     drawChart([]);
+    renderRecentStreamsTable([]);
     return;
   }
 
   await ensureDataForRange(range.start, range.end);
-  state.filteredEvents = state.allEvents.filter((e) => e.startDate >= range.start && e.startDate <= range.end);
+  const inRange = state.allEvents.filter((e) => e.startDate >= range.start && e.startDate <= range.end);
+
+  state.filteredEvents = inRange.filter((e) => e.numberOfChats !== null && e.revenue !== null);
   drawChart(state.filteredEvents);
+  renderRecentStreamsTable(inRange);
 }
 
 document.addEventListener('themechange', () => drawChart(state.filteredEvents));

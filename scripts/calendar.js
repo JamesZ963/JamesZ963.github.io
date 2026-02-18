@@ -2,7 +2,6 @@ const MIN_DATE = new Date('2021-01-01T00:00:00');
 const MAX_EVENTS_PER_DAY = 3;
 
 const state = {
-  viewMode: 'month',
   currentDate: new Date(),
   events: [],
   searchQuery: '',
@@ -12,7 +11,6 @@ const state = {
 
 const calendarEl = document.getElementById('calendar');
 const periodTitleEl = document.getElementById('periodTitle');
-const viewModeEl = document.getElementById('viewMode');
 const datePickerEl = document.getElementById('datePicker');
 const prevBtnEl = document.getElementById('prevBtn');
 const nextBtnEl = document.getElementById('nextBtn');
@@ -21,6 +19,10 @@ const popupEl = document.getElementById('eventPopup');
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function decodeUtf8(buffer) {
+  return new TextDecoder('utf-8').decode(buffer);
 }
 
 function formatCurrency(value) {
@@ -34,7 +36,6 @@ function splitCsvLine(line) {
 
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i];
-
     if (ch === '"') {
       const next = line[i + 1];
       if (inQuotes && next === '"') {
@@ -57,18 +58,16 @@ function splitCsvLine(line) {
 
 function toList(rawValue) {
   if (!rawValue) return [];
-  return rawValue
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean);
+  return rawValue.split(',').map((x) => x.trim()).filter(Boolean);
 }
 
 function parseCsv(csvText) {
-  const trimmed = csvText.trim();
+  const normalized = csvText.replace(/^\uFEFF/, '');
+  const trimmed = normalized.trim();
   if (!trimmed) return [];
 
   const [headerLine, ...lines] = trimmed.split(/\r?\n/);
-  const headers = splitCsvLine(headerLine).map((h) => h.toLowerCase());
+  const headers = splitCsvLine(headerLine).map((h) => h.replace(/^\uFEFF/, '').toLowerCase());
 
   return lines
     .filter(Boolean)
@@ -78,17 +77,11 @@ function parseCsv(csvText) {
 
       const startDate = new Date(row.start_date);
       const rawEndDate = row.end_date ? new Date(row.end_date) : null;
-
-      if (Number.isNaN(startDate.getTime())) {
-        return null;
-      }
+      if (Number.isNaN(startDate.getTime())) return null;
 
       const endDate = rawEndDate && !Number.isNaN(rawEndDate.getTime()) ? rawEndDate : startDate;
-
-      const chatValue = row.number_of_chats?.trim();
-      const revenueValue = row.revenue?.trim();
-      const chats = chatValue ? Number(chatValue) : null;
-      const revenue = revenueValue ? Number(revenueValue) : null;
+      const chats = row.number_of_chats?.trim() ? Number(row.number_of_chats.trim()) : null;
+      const revenue = row.revenue?.trim() ? Number(row.revenue.trim()) : null;
 
       return {
         id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
@@ -105,10 +98,7 @@ function parseCsv(csvText) {
       };
     })
     .filter(Boolean)
-    .map((event) => ({
-      ...event,
-      games: event.games.length ? event.games : ['Unknown']
-    }));
+    .map((event) => ({ ...event, games: event.games.length ? event.games : ['Unknown'] }));
 }
 
 function quarterFromDate(date) {
@@ -128,11 +118,11 @@ async function loadQuarterEvents(key) {
 
   let events = [];
   const path = quarterFilePath(key);
-
   try {
     const response = await fetch(path);
     if (response.ok) {
-      events = parseCsv(await response.text());
+      const buffer = await response.arrayBuffer();
+      events = parseCsv(decodeUtf8(buffer));
     } else if (response.status !== 404) {
       console.warn(`Failed to load ${path}: HTTP ${response.status}`);
     }
@@ -154,7 +144,6 @@ function quarterKeysInRange(startDate, endDate) {
     if (!keys.includes(key)) keys.push(key);
     cursor.setMonth(cursor.getMonth() + 1);
   }
-
   return keys;
 }
 
@@ -167,21 +156,8 @@ function monthVisibleRange(date) {
   return { start: startOfDay(start), end: startOfDay(end) };
 }
 
-function startOfWeek(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  return startOfDay(d);
-}
-
-function weekVisibleRange(date) {
-  const start = startOfWeek(date);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return { start, end };
-}
-
 async function ensureEventsForCurrentView() {
-  const { start, end } = state.viewMode === 'month' ? monthVisibleRange(state.currentDate) : weekVisibleRange(state.currentDate);
+  const { start, end } = monthVisibleRange(state.currentDate);
   await Promise.all(quarterKeysInRange(start, end).map((key) => loadQuarterEvents(key)));
   state.events = [...state.quarterCache.values()].flat();
 }
@@ -197,7 +173,6 @@ function isSameDay(a, b) {
 function getFilteredEvents() {
   const query = state.searchQuery.trim().toLowerCase();
   if (!query) return state.events;
-
   return state.events.filter((event) => (
     event.title.toLowerCase().includes(query)
     || event.games.join(', ').toLowerCase().includes(query)
@@ -210,10 +185,6 @@ function eventsForDay(day) {
   return getFilteredEvents().filter((event) => isSameDay(event.startDate, day));
 }
 
-function dateLabel(date) {
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 function hidePopupIfNotAnchored() {
   if (!state.anchoredEventId) popupEl.hidden = true;
 }
@@ -224,15 +195,11 @@ function popupHtml(event) {
     `<span><b>Game:</b> ${event.games.length ? event.games.join(', ') : 'Unknown'}</span>`
   ];
 
-  if (event.startDate || event.endDate) {
-    const start = event.startDate.toISOString().slice(0, 10);
-    const end = event.endDate.toISOString().slice(0, 10);
-    const dateText = start === end ? start : `${start} to ${end}`;
-    lines.push(`<span><b>Date:</b> ${dateText}</span>`);
-  }
-  if (event.startTime || event.endTime) {
-    lines.push(`<span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span>`);
-  }
+  const start = event.startDate.toISOString().slice(0, 10);
+  const end = event.endDate.toISOString().slice(0, 10);
+  lines.push(`<span><b>Date:</b> ${start === end ? start : `${start} to ${end}`}</span>`);
+
+  if (event.startTime || event.endTime) lines.push(`<span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span>`);
   if (event.tags.length) lines.push(`<span><b>Tags:</b> ${event.tags.join(', ')}</span>`);
   if (event.numberOfChats !== null) lines.push(`<span><b>Chats:</b> ${event.numberOfChats}</span>`);
   if (event.revenue !== null) lines.push(`<span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span>`);
@@ -260,7 +227,6 @@ function buildEventItem(event) {
   item.className = 'event-item';
   item.dataset.eventId = event.id;
   item.textContent = `${event.title || 'Unknown'} (${event.games.length ? event.games.join(', ') : 'Unknown'})`;
-
   item.addEventListener('mouseenter', () => showPopupForEvent(event, item));
   item.addEventListener('mouseleave', hidePopupIfNotAnchored);
   item.addEventListener('click', (clickEvent) => {
@@ -270,14 +236,12 @@ function buildEventItem(event) {
     else popupEl.hidden = true;
     applySelectedEventStyling();
   });
-
   return item;
 }
 
 function appendEventsToDayContainer(container, day) {
   const dayEvents = eventsForDay(day);
   const visibleEvents = dayEvents.slice(0, MAX_EVENTS_PER_DAY);
-
   visibleEvents.forEach((event) => container.appendChild(buildEventItem(event)));
 
   if (dayEvents.length > MAX_EVENTS_PER_DAY) {
@@ -307,7 +271,6 @@ function renderMonth() {
   for (let i = 0; i < 42; i += 1) {
     const day = new Date(gridStart);
     day.setDate(gridStart.getDate() + i);
-
     const cell = document.createElement('div');
     cell.className = 'day-cell';
     if (day.getMonth() !== state.currentDate.getMonth()) cell.classList.add('muted');
@@ -316,7 +279,6 @@ function renderMonth() {
     number.className = 'day-number';
     number.textContent = String(day.getDate());
     cell.appendChild(number);
-
     appendEventsToDayContainer(cell, day);
     grid.appendChild(cell);
   }
@@ -326,73 +288,27 @@ function renderMonth() {
   applySelectedEventStyling();
 }
 
-function renderWeek() {
-  const weekStart = startOfWeek(state.currentDate);
-  const list = document.createElement('div');
-  list.className = 'week-list';
-
-  for (let i = 0; i < 7; i += 1) {
-    const day = new Date(weekStart);
-    day.setDate(weekStart.getDate() + i);
-
-    const dayBlock = document.createElement('div');
-    dayBlock.className = 'week-day';
-
-    const heading = document.createElement('strong');
-    heading.textContent = day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-    dayBlock.appendChild(heading);
-
-    const matches = eventsForDay(day);
-    if (matches.length === 0) {
-      const none = document.createElement('div');
-      none.className = 'small';
-      none.textContent = 'No events';
-      dayBlock.appendChild(none);
-    } else {
-      appendEventsToDayContainer(dayBlock, day);
-    }
-
-    list.appendChild(dayBlock);
-  }
-
-  calendarEl.replaceChildren(list);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  periodTitleEl.textContent = `${dateLabel(weekStart)} - ${dateLabel(weekEnd)}`;
-  applySelectedEventStyling();
-}
-
 async function renderCalendar() {
   await ensureEventsForCurrentView();
-  if (state.viewMode === 'month') renderMonth();
-  else renderWeek();
+  renderMonth();
   datePickerEl.value = state.currentDate.toISOString().slice(0, 10);
 }
 
-async function movePeriod(direction) {
+async function moveMonth(direction) {
   const d = new Date(state.currentDate);
-  if (state.viewMode === 'month') d.setMonth(d.getMonth() + direction);
-  else d.setDate(d.getDate() + direction * 7);
+  d.setMonth(d.getMonth() + direction);
   state.currentDate = clampToMinDate(d);
   await renderCalendar();
 }
 
-viewModeEl.addEventListener('change', async (event) => {
-  state.viewMode = event.target.value;
-  state.anchoredEventId = null;
-  popupEl.hidden = true;
-  await renderCalendar();
-});
-
-prevBtnEl.addEventListener('click', async () => movePeriod(-1));
-nextBtnEl.addEventListener('click', async () => movePeriod(1));
+prevBtnEl.addEventListener('click', async () => moveMonth(-1));
+nextBtnEl.addEventListener('click', async () => moveMonth(1));
 
 searchInputEl.addEventListener('input', (event) => {
   state.searchQuery = event.target.value;
   state.anchoredEventId = null;
   popupEl.hidden = true;
-  if (state.viewMode === 'month') renderMonth();
-  else renderWeek();
+  renderMonth();
 });
 
 datePickerEl.addEventListener('change', async (event) => {

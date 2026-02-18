@@ -17,7 +17,7 @@
   <main>
     <section class="card">
       <h1>Calendar</h1>
-      <p class="small">Data source: quarter files in <code>data/events-YYYY-Q#.csv</code>. Missing quarter files are treated as no events. Earliest selectable date is 2021-01-01.</p>
+      <p class="small">Data source: quarter files in <code>data/events-YYYY-Q#.csv</code> (UTF-8). Missing quarter files are treated as no events. Earliest selectable date is 2021-01-01.</p>
       <div class="controls">
         <label>
           Search
@@ -26,14 +26,7 @@
       </div>
       <div class="controls">
         <label>
-          View
-          <select id="viewMode">
-            <option value="month">Month</option>
-            <option value="week">Week</option>
-          </select>
-        </label>
-        <label>
-          Display period from
+          Display month from
           <input id="datePicker" type="date" min="2021-01-01" />
         </label>
         <button id="prevBtn" type="button">Previous</button>
