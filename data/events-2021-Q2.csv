@@ -1,4 +1,4 @@
-title,start,end,tags
-Team offsite,2021-04-22,2021-04-23,team|internal
-Product launch,2021-05-17,2021-05-17,release|marketing
-Annual review,2021-06-30,2021-06-30,review|internal
+title,start_date,end_date,start_time,end_time,game,summary,number_of_chats,revenue
+Team Collab,2021-04-22,2021-04-23,21:00,01:00,Valorant,Collab stream with guest creators,2440,1120.00
+Launch Event,2021-05-17,2021-05-17,19:30,23:00,Apex Legends,Season launch reactions and ranked grind,2750,1435.70
+Half-Year Review,2021-06-30,2021-06-30,18:00,20:30,Just Chatting,Reviewed channel highlights and goals,1175,380.40

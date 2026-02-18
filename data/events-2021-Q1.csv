@@ -1,4 +1,4 @@
-title,start,end,tags
-Project kickoff,2021-01-10,2021-01-10,planning|internal
-Design sprint,2021-02-15,2021-02-19,design|workshop
-Release planning,2021-03-08,2021-03-08,planning|release
+title,start_date,end_date,start_time,end_time,game,summary,number_of_chats,revenue
+New Year Stream,2021-01-10,2021-01-10,19:00,22:30,Minecraft,Building a winter village and chatting with viewers,1280,420.50
+Boss Rush,2021-02-15,2021-02-16,20:00,00:30,Elden Ring,Two-day challenge stream session,1890,760.25
+Patch Notes Talk,2021-03-08,2021-03-08,18:30,20:00,Variety,Discussed spring updates and roadmap,940,215.00

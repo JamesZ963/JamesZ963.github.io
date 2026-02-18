@@ -5,8 +5,8 @@ const state = {
   currentDate: new Date(),
   events: [],
   searchQuery: '',
-  selectedTag: 'all',
-  quarterCache: new Map()
+  quarterCache: new Map(),
+  anchoredEventId: null
 };
 
 const calendarEl = document.getElementById('calendar');
@@ -16,40 +16,49 @@ const datePickerEl = document.getElementById('datePicker');
 const prevBtnEl = document.getElementById('prevBtn');
 const nextBtnEl = document.getElementById('nextBtn');
 const searchInputEl = document.getElementById('searchInput');
-const tagFilterEl = document.getElementById('tagFilter');
+const popupEl = document.getElementById('eventPopup');
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
+}
+
 function parseCsv(csvText) {
   const trimmed = csvText.trim();
-  if (!trimmed) {
-    return [];
-  }
+  if (!trimmed) return [];
 
   const [headerLine, ...lines] = trimmed.split(/\r?\n/);
   const headers = headerLine.split(',').map((h) => h.trim().toLowerCase());
 
   return lines
     .filter(Boolean)
-    .map((line) => {
+    .map((line, index) => {
       const values = line.split(',').map((v) => v.trim());
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
-      const start = new Date(row.start);
-      const end = row.end ? new Date(row.end) : new Date(row.start);
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+
+      const startDate = new Date(row.start_date);
+      const endDate = row.end_date ? new Date(row.end_date) : startDate;
+      const chats = Number(row.number_of_chats ?? 0);
+      const revenue = Number(row.revenue ?? 0);
+
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || Number.isNaN(chats) || Number.isNaN(revenue)) {
         return null;
       }
 
       return {
+        id: `${row.title || 'event'}-${row.start_date}-${index}`,
         title: row.title || 'Untitled Event',
-        start: startOfDay(start),
-        end: startOfDay(end),
-        tags: (row.tags || '')
-          .split('|')
-          .map((tag) => tag.trim())
-          .filter(Boolean)
+        startDate: startOfDay(startDate),
+        endDate: startOfDay(endDate),
+        startTime: row.start_time || '',
+        endTime: row.end_time || '',
+        game: row.game || 'Unknown Game',
+        summary: row.summary || '',
+        numberOfChats: chats,
+        revenue
       };
     })
     .filter(Boolean);
@@ -68,18 +77,15 @@ function quarterFilePath(key) {
 }
 
 async function loadQuarterEvents(key) {
-  if (state.quarterCache.has(key)) {
-    return state.quarterCache.get(key);
-  }
+  if (state.quarterCache.has(key)) return state.quarterCache.get(key);
 
-  const path = quarterFilePath(key);
   let events = [];
+  const path = quarterFilePath(key);
 
   try {
     const response = await fetch(path);
     if (response.ok) {
-      const csvText = await response.text();
-      events = parseCsv(csvText);
+      events = parseCsv(await response.text());
     } else if (response.status !== 404) {
       console.warn(`Failed to load ${path}: HTTP ${response.status}`);
     }
@@ -98,9 +104,7 @@ function quarterKeysInRange(startDate, endDate) {
 
   while (cursor <= endCursor) {
     const key = quarterKey(cursor);
-    if (!keys.includes(key)) {
-      keys.push(key);
-    }
+    if (!keys.includes(key)) keys.push(key);
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
@@ -111,81 +115,128 @@ function monthVisibleRange(date) {
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const start = new Date(firstDay);
   start.setDate(firstDay.getDate() - firstDay.getDay());
-
   const end = new Date(start);
   end.setDate(start.getDate() + 41);
-
   return { start: startOfDay(start), end: startOfDay(end) };
+}
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  return startOfDay(d);
 }
 
 function weekVisibleRange(date) {
   const start = startOfWeek(date);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  return { start: startOfDay(start), end: startOfDay(end) };
+  return { start, end };
 }
 
 async function ensureEventsForCurrentView() {
   const { start, end } = state.viewMode === 'month' ? monthVisibleRange(state.currentDate) : weekVisibleRange(state.currentDate);
-  const neededKeys = quarterKeysInRange(start, end);
-
-  await Promise.all(neededKeys.map((key) => loadQuarterEvents(key)));
+  await Promise.all(quarterKeysInRange(start, end).map((key) => loadQuarterEvents(key)));
   state.events = [...state.quarterCache.values()].flat();
-}
-
-function dateLabel(date) {
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function clampToMinDate(date) {
   return date < MIN_DATE ? new Date(MIN_DATE) : date;
 }
 
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
 function getFilteredEvents() {
   const query = state.searchQuery.trim().toLowerCase();
-  return state.events.filter((event) => {
-    const matchesTag = state.selectedTag === 'all' || event.tags.includes(state.selectedTag);
-    if (!matchesTag) {
-      return false;
-    }
+  if (!query) return state.events;
 
-    if (!query) {
-      return true;
-    }
-
-    const titleMatch = event.title.toLowerCase().includes(query);
-    const tagMatch = event.tags.some((tag) => tag.toLowerCase().includes(query));
-    return titleMatch || tagMatch;
-  });
+  return state.events.filter((event) => (
+    event.title.toLowerCase().includes(query)
+    || event.game.toLowerCase().includes(query)
+    || event.summary.toLowerCase().includes(query)
+  ));
 }
 
 function eventsForDay(day) {
-  return getFilteredEvents().filter((event) => day >= event.start && day <= event.end);
+  return getFilteredEvents().filter((event) => isSameDay(event.startDate, day));
 }
 
-function renderTagFilterOptions() {
-  const allTags = [...new Set(state.events.flatMap((event) => event.tags))].sort((a, b) => a.localeCompare(b));
-  const previousTag = state.selectedTag;
+function dateLabel(date) {
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
-  tagFilterEl.innerHTML = '<option value="all">All tags</option>';
-  allTags.forEach((tag) => {
-    const option = document.createElement('option');
-    option.value = tag;
-    option.textContent = tag;
-    tagFilterEl.appendChild(option);
+function hidePopupIfNotAnchored() {
+  if (!state.anchoredEventId) {
+    popupEl.hidden = true;
+  }
+}
+
+function popupHtml(event) {
+  return `
+    <strong>${event.title}</strong><br>
+    <span><b>Game:</b> ${event.game}</span><br>
+    <span><b>Date:</b> ${event.startDate.toISOString().slice(0, 10)} to ${event.endDate.toISOString().slice(0, 10)}</span><br>
+    <span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span><br>
+    <span><b>Chats:</b> ${event.numberOfChats}</span><br>
+    <span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span><br>
+    <span><b>Summary:</b> ${event.summary || '-'}</span>
+  `;
+}
+
+function showPopupForEvent(event, anchorEl) {
+  popupEl.innerHTML = popupHtml(event);
+  const rect = anchorEl.getBoundingClientRect();
+  const top = window.scrollY + rect.bottom + 8;
+  const left = window.scrollX + rect.left;
+  popupEl.style.top = `${top}px`;
+  popupEl.style.left = `${left}px`;
+  popupEl.hidden = false;
+}
+
+function applySelectedEventStyling() {
+  calendarEl.querySelectorAll('.event-item').forEach((el) => {
+    if (el.dataset.eventId === state.anchoredEventId) {
+      el.classList.add('selected');
+    } else {
+      el.classList.remove('selected');
+    }
+  });
+}
+
+function buildEventItem(event) {
+  const item = document.createElement('div');
+  item.className = 'event-item';
+  item.dataset.eventId = event.id;
+  item.textContent = `${event.title} (${event.game})`;
+
+  item.addEventListener('mouseenter', () => {
+    showPopupForEvent(event, item);
   });
 
-  state.selectedTag = allTags.includes(previousTag) ? previousTag : 'all';
-  tagFilterEl.value = state.selectedTag;
+  item.addEventListener('mouseleave', () => {
+    hidePopupIfNotAnchored();
+  });
+
+  item.addEventListener('click', (clickEvent) => {
+    clickEvent.stopPropagation();
+    state.anchoredEventId = state.anchoredEventId === event.id ? null : event.id;
+    if (state.anchoredEventId) {
+      showPopupForEvent(event, item);
+    } else {
+      popupEl.hidden = true;
+    }
+    applySelectedEventStyling();
+  });
+
+  return item;
 }
 
 function renderMonth() {
   const firstDay = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1);
-  const monthStartWeekday = firstDay.getDay();
   const gridStart = new Date(firstDay);
-  gridStart.setDate(firstDay.getDate() - monthStartWeekday);
+  gridStart.setDate(firstDay.getDate() - firstDay.getDay());
 
-  const fragment = document.createDocumentFragment();
   const weekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const grid = document.createElement('div');
   grid.className = 'month-grid';
@@ -203,9 +254,7 @@ function renderMonth() {
 
     const cell = document.createElement('div');
     cell.className = 'day-cell';
-    if (day.getMonth() !== state.currentDate.getMonth()) {
-      cell.classList.add('muted');
-    }
+    if (day.getMonth() !== state.currentDate.getMonth()) cell.classList.add('muted');
 
     const number = document.createElement('div');
     number.className = 'day-number';
@@ -213,28 +262,15 @@ function renderMonth() {
     cell.appendChild(number);
 
     eventsForDay(day).forEach((event) => {
-      const item = document.createElement('div');
-      item.className = 'event-item';
-      item.textContent = event.title;
-      cell.appendChild(item);
+      cell.appendChild(buildEventItem(event));
     });
 
     grid.appendChild(cell);
   }
 
-  fragment.appendChild(grid);
-  calendarEl.replaceChildren(fragment);
-
-  periodTitleEl.textContent = state.currentDate.toLocaleDateString(undefined, {
-    month: 'long',
-    year: 'numeric'
-  });
-}
-
-function startOfWeek(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  return startOfDay(d);
+  calendarEl.replaceChildren(grid);
+  periodTitleEl.textContent = state.currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  applySelectedEventStyling();
 }
 
 function renderWeek() {
@@ -260,12 +296,7 @@ function renderWeek() {
       none.textContent = 'No events';
       dayBlock.appendChild(none);
     } else {
-      matches.forEach((event) => {
-        const item = document.createElement('div');
-        item.className = 'event-item';
-        item.textContent = event.title;
-        dayBlock.appendChild(item);
-      });
+      matches.forEach((event) => dayBlock.appendChild(buildEventItem(event)));
     }
 
     list.appendChild(dayBlock);
@@ -275,33 +306,28 @@ function renderWeek() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   periodTitleEl.textContent = `${dateLabel(weekStart)} - ${dateLabel(weekEnd)}`;
+  applySelectedEventStyling();
 }
 
 async function renderCalendar() {
   await ensureEventsForCurrentView();
-  renderTagFilterOptions();
-
-  if (state.viewMode === 'month') {
-    renderMonth();
-  } else {
-    renderWeek();
-  }
+  if (state.viewMode === 'month') renderMonth();
+  else renderWeek();
   datePickerEl.value = state.currentDate.toISOString().slice(0, 10);
 }
 
 async function movePeriod(direction) {
   const d = new Date(state.currentDate);
-  if (state.viewMode === 'month') {
-    d.setMonth(d.getMonth() + direction);
-  } else {
-    d.setDate(d.getDate() + direction * 7);
-  }
+  if (state.viewMode === 'month') d.setMonth(d.getMonth() + direction);
+  else d.setDate(d.getDate() + direction * 7);
   state.currentDate = clampToMinDate(d);
   await renderCalendar();
 }
 
 viewModeEl.addEventListener('change', async (event) => {
   state.viewMode = event.target.value;
+  state.anchoredEventId = null;
+  popupEl.hidden = true;
   await renderCalendar();
 });
 
@@ -310,29 +336,27 @@ nextBtnEl.addEventListener('click', async () => movePeriod(1));
 
 searchInputEl.addEventListener('input', (event) => {
   state.searchQuery = event.target.value;
-  if (state.viewMode === 'month') {
-    renderMonth();
-  } else {
-    renderWeek();
-  }
-});
-
-tagFilterEl.addEventListener('change', (event) => {
-  state.selectedTag = event.target.value;
-  if (state.viewMode === 'month') {
-    renderMonth();
-  } else {
-    renderWeek();
-  }
+  state.anchoredEventId = null;
+  popupEl.hidden = true;
+  if (state.viewMode === 'month') renderMonth();
+  else renderWeek();
 });
 
 datePickerEl.addEventListener('change', async (event) => {
   const chosen = new Date(`${event.target.value}T00:00:00`);
-  if (Number.isNaN(chosen.getTime())) {
-    return;
-  }
+  if (Number.isNaN(chosen.getTime())) return;
   state.currentDate = clampToMinDate(chosen);
+  state.anchoredEventId = null;
+  popupEl.hidden = true;
   await renderCalendar();
+});
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.event-item') && !event.target.closest('#eventPopup')) {
+    state.anchoredEventId = null;
+    popupEl.hidden = true;
+    applySelectedEventStyling();
+  }
 });
 
 (async function init() {

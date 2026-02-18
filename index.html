@@ -10,20 +10,35 @@
   <nav class="top-nav">
     <a href="index.html" aria-current="page">Home</a>
     <a href="calendar.html">Calendar</a>
-    <a href="chart.html">Line Chart</a>
+    <a href="chart.html">Stats</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">Switch Theme</button>
   </nav>
 
   <main>
     <section class="card">
       <h1>Welcome</h1>
+
+      <div id="liveVisual" class="hero live" hidden>
+        <h2>Live Status: ON AIR</h2>
+        <p>Realtime mode visuals are active.</p>
+      </div>
+
+      <div id="offlineVisual" class="hero offline" hidden>
+        <h2>Live Status: OFFLINE</h2>
+        <p>Standby mode visuals are active.</p>
+      </div>
+
       <p>This website has three pages:</p>
       <ul>
         <li><strong>Home</strong>: this overview page.</li>
-        <li><strong>Calendar</strong>: loads events from a CSV file and supports month/week display.</li>
-        <li><strong>Line Chart</strong>: loads numeric data from a CSV file and renders a chart.</li>
+        <li><strong>Calendar</strong>: loads events from quarter CSV files and supports month/week display.</li>
+        <li><strong>Stats</strong>: renders chats/revenue trends from the same quarterly stream CSV files.</li>
       </ul>
       <p class="small">Use the links above to switch pages.</p>
     </section>
   </main>
+
+  <script src="scripts/theme.js"></script>
+  <script src="scripts/home.js"></script>
 </body>
 </html>
