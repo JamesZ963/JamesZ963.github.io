@@ -16,23 +16,57 @@ function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function splitCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      const next = line[i + 1];
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
 function parseCsv(csvText) {
   const trimmed = csvText.trim();
   if (!trimmed) return [];
 
   const [headerLine, ...lines] = trimmed.split(/\r?\n/);
-  const headers = headerLine.split(',').map((h) => h.trim().toLowerCase());
+  const headers = splitCsvLine(headerLine).map((h) => h.toLowerCase());
 
   return lines
     .filter(Boolean)
     .map((line) => {
-      const values = line.split(',').map((v) => v.trim());
+      const values = splitCsvLine(line);
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
-      const startDate = new Date(row.start_date);
-      const chats = Number(row.number_of_chats ?? 0);
-      const revenue = Number(row.revenue ?? 0);
 
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(chats) || Number.isNaN(revenue)) {
+      const startDate = new Date(row.start_date);
+      const chatsRaw = row.number_of_chats?.trim();
+      const revenueRaw = row.revenue?.trim();
+
+      if (Number.isNaN(startDate.getTime()) || !chatsRaw || !revenueRaw) {
+        return null;
+      }
+
+      const chats = Number(chatsRaw);
+      const revenue = Number(revenueRaw);
+      if (Number.isNaN(chats) || Number.isNaN(revenue)) {
         return null;
       }
 
@@ -77,6 +111,7 @@ async function loadQuarterEvents(key) {
 
   let events = [];
   const path = quarterFilePath(key);
+
   try {
     const response = await fetch(path);
     if (response.ok) {
@@ -106,7 +141,7 @@ function getThemeColors() {
 function drawNoData(theme) {
   ctx.fillStyle = theme.text;
   ctx.font = '16px Calibri, "Microsoft YaHei", sans-serif';
-  ctx.fillText('No data in selected date range.', 25, 40);
+  ctx.fillText('No complete chat/revenue data in selected date range.', 25, 40);
 }
 
 function drawChart(events) {
@@ -126,7 +161,6 @@ function drawChart(events) {
 
   const minTime = events[0].startDate.getTime();
   const maxTime = events[events.length - 1].startDate.getTime();
-
   const maxChats = Math.max(...events.map((e) => e.numberOfChats), 1);
   const maxRevenue = Math.max(...events.map((e) => e.revenue), 1);
 
@@ -197,9 +231,7 @@ async function ensureDataForRange(startDate, endDate) {
 function parseRangeInputs() {
   const start = new Date(`${startDateEl.value}T00:00:00`);
   const end = new Date(`${endDateEl.value}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
-    return null;
-  }
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return null;
   return { start: startOfDay(start), end: startOfDay(end) };
 }
 
@@ -215,13 +247,8 @@ async function applyRange() {
   drawChart(state.filteredEvents);
 }
 
-document.addEventListener('themechange', () => {
-  drawChart(state.filteredEvents);
-});
-
-applyRangeBtnEl.addEventListener('click', async () => {
-  await applyRange();
-});
+document.addEventListener('themechange', () => drawChart(state.filteredEvents));
+applyRangeBtnEl.addEventListener('click', async () => applyRange());
 
 (async function init() {
   const today = startOfDay(new Date());

@@ -1,4 +1,5 @@
 const MIN_DATE = new Date('2021-01-01T00:00:00');
+const MAX_EVENTS_PER_DAY = 3;
 
 const state = {
   viewMode: 'month',
@@ -26,42 +27,88 @@ function formatCurrency(value) {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
 }
 
+function splitCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+
+    if (ch === '"') {
+      const next = line[i + 1];
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function toList(rawValue) {
+  if (!rawValue) return [];
+  return rawValue
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
 function parseCsv(csvText) {
   const trimmed = csvText.trim();
   if (!trimmed) return [];
 
   const [headerLine, ...lines] = trimmed.split(/\r?\n/);
-  const headers = headerLine.split(',').map((h) => h.trim().toLowerCase());
+  const headers = splitCsvLine(headerLine).map((h) => h.toLowerCase());
 
   return lines
     .filter(Boolean)
     .map((line, index) => {
-      const values = line.split(',').map((v) => v.trim());
+      const values = splitCsvLine(line);
       const row = Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
 
       const startDate = new Date(row.start_date);
-      const endDate = row.end_date ? new Date(row.end_date) : startDate;
-      const chats = Number(row.number_of_chats ?? 0);
-      const revenue = Number(row.revenue ?? 0);
+      const rawEndDate = row.end_date ? new Date(row.end_date) : null;
 
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || Number.isNaN(chats) || Number.isNaN(revenue)) {
+      if (Number.isNaN(startDate.getTime())) {
         return null;
       }
 
+      const endDate = rawEndDate && !Number.isNaN(rawEndDate.getTime()) ? rawEndDate : startDate;
+
+      const chatValue = row.number_of_chats?.trim();
+      const revenueValue = row.revenue?.trim();
+      const chats = chatValue ? Number(chatValue) : null;
+      const revenue = revenueValue ? Number(revenueValue) : null;
+
       return {
-        id: `${row.title || 'event'}-${row.start_date}-${index}`,
-        title: row.title || 'Untitled Event',
+        id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
+        title: row.title?.trim() || 'Unknown',
         startDate: startOfDay(startDate),
         endDate: startOfDay(endDate),
-        startTime: row.start_time || '',
-        endTime: row.end_time || '',
-        game: row.game || 'Unknown Game',
-        summary: row.summary || '',
-        numberOfChats: chats,
-        revenue
+        startTime: row.start_time?.trim() || '',
+        endTime: row.end_time?.trim() || '',
+        games: toList(row.game),
+        tags: toList(row.tags),
+        summary: row.summary?.trim() || '',
+        numberOfChats: Number.isNaN(chats) ? null : chats,
+        revenue: Number.isNaN(revenue) ? null : revenue
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((event) => ({
+      ...event,
+      games: event.games.length ? event.games : ['Unknown']
+    }));
 }
 
 function quarterFromDate(date) {
@@ -153,7 +200,8 @@ function getFilteredEvents() {
 
   return state.events.filter((event) => (
     event.title.toLowerCase().includes(query)
-    || event.game.toLowerCase().includes(query)
+    || event.games.join(', ').toLowerCase().includes(query)
+    || event.tags.join(', ').toLowerCase().includes(query)
     || event.summary.toLowerCase().includes(query)
   ));
 }
@@ -167,40 +215,43 @@ function dateLabel(date) {
 }
 
 function hidePopupIfNotAnchored() {
-  if (!state.anchoredEventId) {
-    popupEl.hidden = true;
-  }
+  if (!state.anchoredEventId) popupEl.hidden = true;
 }
 
 function popupHtml(event) {
-  return `
-    <strong>${event.title}</strong><br>
-    <span><b>Game:</b> ${event.game}</span><br>
-    <span><b>Date:</b> ${event.startDate.toISOString().slice(0, 10)} to ${event.endDate.toISOString().slice(0, 10)}</span><br>
-    <span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span><br>
-    <span><b>Chats:</b> ${event.numberOfChats}</span><br>
-    <span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span><br>
-    <span><b>Summary:</b> ${event.summary || '-'}</span>
-  `;
+  const lines = [
+    `<strong>${event.title || 'Unknown'}</strong>`,
+    `<span><b>Game:</b> ${event.games.length ? event.games.join(', ') : 'Unknown'}</span>`
+  ];
+
+  if (event.startDate || event.endDate) {
+    const start = event.startDate.toISOString().slice(0, 10);
+    const end = event.endDate.toISOString().slice(0, 10);
+    const dateText = start === end ? start : `${start} to ${end}`;
+    lines.push(`<span><b>Date:</b> ${dateText}</span>`);
+  }
+  if (event.startTime || event.endTime) {
+    lines.push(`<span><b>Time:</b> ${event.startTime || '-'} to ${event.endTime || '-'}</span>`);
+  }
+  if (event.tags.length) lines.push(`<span><b>Tags:</b> ${event.tags.join(', ')}</span>`);
+  if (event.numberOfChats !== null) lines.push(`<span><b>Chats:</b> ${event.numberOfChats}</span>`);
+  if (event.revenue !== null) lines.push(`<span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span>`);
+  if (event.summary) lines.push(`<span><b>Summary:</b> ${event.summary}</span>`);
+
+  return lines.join('<br>');
 }
 
 function showPopupForEvent(event, anchorEl) {
   popupEl.innerHTML = popupHtml(event);
   const rect = anchorEl.getBoundingClientRect();
-  const top = window.scrollY + rect.bottom + 8;
-  const left = window.scrollX + rect.left;
-  popupEl.style.top = `${top}px`;
-  popupEl.style.left = `${left}px`;
+  popupEl.style.top = `${window.scrollY + rect.bottom + 8}px`;
+  popupEl.style.left = `${window.scrollX + rect.left}px`;
   popupEl.hidden = false;
 }
 
 function applySelectedEventStyling() {
   calendarEl.querySelectorAll('.event-item').forEach((el) => {
-    if (el.dataset.eventId === state.anchoredEventId) {
-      el.classList.add('selected');
-    } else {
-      el.classList.remove('selected');
-    }
+    el.classList.toggle('selected', el.dataset.eventId === state.anchoredEventId);
   });
 }
 
@@ -208,28 +259,33 @@ function buildEventItem(event) {
   const item = document.createElement('div');
   item.className = 'event-item';
   item.dataset.eventId = event.id;
-  item.textContent = `${event.title} (${event.game})`;
+  item.textContent = `${event.title || 'Unknown'} (${event.games.length ? event.games.join(', ') : 'Unknown'})`;
 
-  item.addEventListener('mouseenter', () => {
-    showPopupForEvent(event, item);
-  });
-
-  item.addEventListener('mouseleave', () => {
-    hidePopupIfNotAnchored();
-  });
-
+  item.addEventListener('mouseenter', () => showPopupForEvent(event, item));
+  item.addEventListener('mouseleave', hidePopupIfNotAnchored);
   item.addEventListener('click', (clickEvent) => {
     clickEvent.stopPropagation();
     state.anchoredEventId = state.anchoredEventId === event.id ? null : event.id;
-    if (state.anchoredEventId) {
-      showPopupForEvent(event, item);
-    } else {
-      popupEl.hidden = true;
-    }
+    if (state.anchoredEventId) showPopupForEvent(event, item);
+    else popupEl.hidden = true;
     applySelectedEventStyling();
   });
 
   return item;
+}
+
+function appendEventsToDayContainer(container, day) {
+  const dayEvents = eventsForDay(day);
+  const visibleEvents = dayEvents.slice(0, MAX_EVENTS_PER_DAY);
+
+  visibleEvents.forEach((event) => container.appendChild(buildEventItem(event)));
+
+  if (dayEvents.length > MAX_EVENTS_PER_DAY) {
+    const more = document.createElement('div');
+    more.className = 'event-more small';
+    more.textContent = `+${dayEvents.length - MAX_EVENTS_PER_DAY} more`;
+    container.appendChild(more);
+  }
 }
 
 function renderMonth() {
@@ -261,10 +317,7 @@ function renderMonth() {
     number.textContent = String(day.getDate());
     cell.appendChild(number);
 
-    eventsForDay(day).forEach((event) => {
-      cell.appendChild(buildEventItem(event));
-    });
-
+    appendEventsToDayContainer(cell, day);
     grid.appendChild(cell);
   }
 
@@ -296,7 +349,7 @@ function renderWeek() {
       none.textContent = 'No events';
       dayBlock.appendChild(none);
     } else {
-      matches.forEach((event) => dayBlock.appendChild(buildEventItem(event)));
+      appendEventsToDayContainer(dayBlock, day);
     }
 
     list.appendChild(dayBlock);
