@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stats</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+    <a href="calendar.html">Calendar</a>
+    <a href="chart.html" aria-current="page">Stats</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">Switch Theme</button>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>Stats</h1>
+      <p class="small">Data source: quarter files in <code>data/events-YYYY-Q#.csv</code>. Showing Number of Chats and Revenue.</p>
+      <div class="controls">
+        <label>
+          Start date
+          <input id="startDate" type="date" min="2021-01-01" />
+        </label>
+        <label>
+          End date
+          <input id="endDate" type="date" min="2021-01-01" />
+        </label>
+        <button id="applyRangeBtn" type="button">Apply range</button>
+      </div>
+      <canvas id="lineChart" width="1000" height="450" aria-label="stats line chart"></canvas>
+    </section>
+  </main>
+
+  <script src="scripts/theme.js"></script>
+  <script src="scripts/chart.js"></script>
+</body>
+</html>
