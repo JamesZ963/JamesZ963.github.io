@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>日历</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html">首页</a>
+    <a href="calendar.html" aria-current="page">日历</a>
+    <a href="chart.html">统计</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">切换主题</button>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1>日历</h1>
+      <p class="small">数据来源：<code>data/events-YYYY-Q#.csv</code>（UTF-8）季度文件。若季度文件缺失则视为该季度无活动。最早可选日期为 2021-01-01。</p>
+      <div class="controls">
+        <label>
+          搜索
+          <input id="searchInput" type="search" placeholder="搜索 标题/游戏/标签/摘要" />
+        </label>
+        <button id="searchBtn" type="button">搜索</button>
+        <button id="exitSearchBtn" type="button" hidden>退出搜索</button>
+      </div>
+      <section id="searchResultsSection" hidden>
+        <h2>搜索结果</h2>
+        <div id="searchResults"></div>
+        <div id="searchPagination" class="pagination"></div>
+      </section>
+      <div class="controls" id="calendarControls">
+        <label>
+          显示月份起点
+          <input id="datePicker" type="date" min="2021-01-01" />
+        </label>
+        <button id="prevBtn" type="button">上一月</button>
+        <button id="nextBtn" type="button">下一月</button>
+      </div>
+      <h2 id="periodTitle"></h2>
+      <div id="calendar"></div>
+      <div id="eventPopup" class="event-popup" hidden></div>
+    </section>
+  </main>
+
+  <script src="scripts/theme.js"></script>
+  <script src="scripts/calendar.js"></script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+:root {
+  color-scheme: dark;
+  font-family: Calibri, "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  --bg: #0b1220;
+  --card: #111a2b;
+  --accent: #6fa3ff;
+  --accent-soft: #1e335c;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #334155;
+  --input-bg: #0f172a;
+  --canvas-bg: #0b1220;
+  --axis: #475569;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f7fb;
+  --card: #ffffff;
+  --accent: #2b6de0;
+  --accent-soft: #dbe7ff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --input-bg: #ffffff;
+  --canvas-bg: #ffffff;
+  --axis: #d1d5db;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.top-nav {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.top-nav a {
+  text-decoration: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.top-nav a[aria-current="page"] {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.theme-toggle {
+  margin-left: 0.5rem;
+}
+
+main {
+  max-width: 1100px;
+  margin: 1.5rem auto;
+  padding: 0 1rem 2rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+button, select, input {
+  font: inherit;
+  color: var(--text);
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+#calendar {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+}
+
+.weekday-header,
+.day-cell {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 8px;
+  min-height: 95px;
+  padding: 0.35rem;
+}
+
+.weekday-header {
+  min-height: auto;
+  font-weight: 700;
+  text-align: center;
+  background: var(--accent-soft);
+}
+
+.day-number {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.day-cell.muted {
+  opacity: 0.6;
+}
+
+.event-item {
+  margin-top: 0.25rem;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.8rem;
+}
+
+.week-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.week-day {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 0.5rem;
+}
+
+canvas {
+  width: 100%;
+  max-width: 1000px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--canvas-bg);
+}
+
+.hero {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.hero.live {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.hero.offline {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.small {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+
+.event-item.selected {
+  border: 2px solid var(--accent);
+}
+
+.event-popup {
+  position: absolute;
+  z-index: 1000;
+  max-width: 360px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+
+.event-more {
+  margin-top: 0.2rem;
+}
+
+
+.streams-section {
+  margin-top: 1.25rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.streams-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+}
+
+.streams-table th,
+.streams-table td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+}
+
+.streams-table th {
+  background: var(--accent-soft);
+}
+
+
+#searchResults {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.search-result-item {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+}
+
+.search-result-item h3 {
+  margin: 0 0 0.35rem;
+}
+
+.search-result-item p {
+  margin: 0.2rem 0;
+}
+
+mark {
+  background: #facc15;
+  color: #111827;
+  padding: 0 0.15rem;
+  border-radius: 2px;
+}
+
+.pagination {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pagination .active-page {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
