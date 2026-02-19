@@ -4,21 +4,19 @@ async function resolveLiveStatus() {
   const data = await response.json();
     
   // 检查API返回的代码，0 代表成功
-  if (data.code === 0) {
-      const liveStatus = data.data.live_status;
-            
-      // 根据 live_status 的值来判断状态
-        if (liveStatus === 1) {
-            return true;
-        } else if (liveStatus === 2) {
-            return true;
-        } else {
-            return false;
-        }
-  } else {
-      return false;}
-
+  if (data.code !== 0) {
+    return false;
   }
+  
+  const liveStatus = data.data.live_status;
+            
+  // 根据 live_status 的值来判断状态
+  if (liveStatus === 1 || liveStatus === 2) {
+    return true;
+  } else {
+    return false
+  }
+}
 
 function renderLiveVisuals(isLive) {
   const liveVisualEl = document.getElementById('liveVisual');
