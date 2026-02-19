@@ -450,6 +450,10 @@ searchInputEl.addEventListener('keydown', async (event) => {
 });
 
 exitSearchBtnEl.addEventListener('click', async () => {
+  state.searchQuery = '';
+  state.searchResults = [];
+  state.searchPage = 1;
+  searchInputEl.value = '';
   exitSearchMode();
   await renderCalendar();
 });
