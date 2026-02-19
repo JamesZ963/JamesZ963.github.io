@@ -21,6 +21,11 @@ function decodeUtf8(buffer) {
   return new TextDecoder('utf-8').decode(buffer);
 }
 
+
+function formatRevenue(value) {
+  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(value);
+}
+
 function splitCsvLine(line) {
   const values = [];
   let current = '';
@@ -247,7 +252,7 @@ function renderRecentStreamsTable(streams) {
     .map((stream) => {
       const date = stream.startDate.toISOString().slice(0, 10);
       const chats = stream.numberOfChats === null ? '-' : String(stream.numberOfChats);
-      const revenue = stream.revenue === null ? '-' : String(stream.revenue);
+      const revenue = stream.revenue === null ? '-' : formatRevenue(stream.revenue);
       return `<tr>
         <td>${date}</td>
         <td>${stream.title || '未知'}</td>

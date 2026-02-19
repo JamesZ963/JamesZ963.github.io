@@ -36,7 +36,7 @@ function decodeUtf8(buffer) {
 }
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value);
+  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(value);
 }
 
 function escapeHtml(text) {
