@@ -1,5 +1,5 @@
 async function resolveLiveStatus() {
-  const apiUrl = `https://api.live.bilibili.com/xlive/web-room/v1/index/getRoomPlayInfo?room_id=1962720`;
+  const apiUrl = `https://bili-live-status.zhan4153.workers.dev/?room_id=1962720`;
   const response = await fetch(apiUrl);
   const data = await response.json();
     
