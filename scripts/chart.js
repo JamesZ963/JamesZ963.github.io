@@ -80,8 +80,8 @@ function parseCsv(csvText) {
         id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
         sequence: index,
         startDate: startOfDay(startDate),
-        title: row.title?.trim() || 'Unknown',
-        game: games.length ? games.join(', ') : 'Unknown',
+        title: row.title?.trim() || '未知',
+        game: games.length ? games.join(', ') : '未知',
         numberOfChats: Number.isNaN(chats) ? null : chats,
         revenue: Number.isNaN(revenue) ? null : revenue
       };
@@ -152,7 +152,7 @@ function getThemeColors() {
 function drawNoData(theme) {
   ctx.fillStyle = theme.text;
   ctx.font = '16px Calibri, "Microsoft YaHei", sans-serif';
-  ctx.fillText('No complete chat/revenue data in selected date range.', 25, 40);
+  ctx.fillText('所选日期范围内没有完整的聊天量/营收数据。', 25, 40);
 }
 
 function drawChart(events) {
@@ -193,8 +193,8 @@ function drawChart(events) {
 
   ctx.fillStyle = theme.text;
   ctx.font = '12px Calibri, "Microsoft YaHei", sans-serif';
-  ctx.fillText('Chats', 10, pad.top + 5);
-  ctx.fillText('Revenue', width - 52, pad.top + 5);
+  ctx.fillText('聊天量', 10, pad.top + 5);
+  ctx.fillText('营收', width - 52, pad.top + 5);
   ctx.fillText(events[0].startDate.toISOString().slice(0, 10), pad.left, height - 12);
   ctx.fillText(events[events.length - 1].startDate.toISOString().slice(0, 10), width - pad.right - 90, height - 12);
   ctx.fillText(String(maxChats), 10, pad.top + 22);
@@ -225,12 +225,12 @@ function drawChart(events) {
   ctx.fillStyle = theme.chats;
   ctx.fillRect(pad.left, pad.top - 18, 10, 10);
   ctx.fillStyle = theme.text;
-  ctx.fillText('Number of Chats', pad.left + 14, pad.top - 9);
+  ctx.fillText('聊天量', pad.left + 14, pad.top - 9);
 
   ctx.fillStyle = theme.revenue;
   ctx.fillRect(pad.left + 140, pad.top - 18, 10, 10);
   ctx.fillStyle = theme.text;
-  ctx.fillText('Revenue', pad.left + 154, pad.top - 9);
+  ctx.fillText('营收', pad.left + 154, pad.top - 9);
 }
 
 function renderRecentStreamsTable(streams) {
@@ -239,7 +239,7 @@ function renderRecentStreamsTable(streams) {
     .slice(0, 7);
 
   if (latest.length === 0) {
-    recentStreamsBodyEl.innerHTML = '<tr><td colspan="5" class="small">No stream records in selected range.</td></tr>';
+    recentStreamsBodyEl.innerHTML = '<tr><td colspan="5" class="small">所选范围内无直播记录。</td></tr>';
     return;
   }
 
@@ -250,8 +250,8 @@ function renderRecentStreamsTable(streams) {
       const revenue = stream.revenue === null ? '-' : String(stream.revenue);
       return `<tr>
         <td>${date}</td>
-        <td>${stream.title || 'Unknown'}</td>
-        <td>${stream.game || 'Unknown'}</td>
+        <td>${stream.title || '未知'}</td>
+        <td>${stream.game || '未知'}</td>
         <td>${chats}</td>
         <td>${revenue}</td>
       </tr>`;

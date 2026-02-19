@@ -1,40 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home</title>
+  <title>首页</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <nav class="top-nav">
-    <a href="index.html" aria-current="page">Home</a>
-    <a href="calendar.html">Calendar</a>
-    <a href="chart.html">Stats</a>
-    <button id="themeToggleBtn" class="theme-toggle" type="button">Switch Theme</button>
+    <a href="index.html" aria-current="page">首页</a>
+    <a href="calendar.html">日历</a>
+    <a href="chart.html">统计</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">切换主题</button>
   </nav>
 
   <main>
     <section class="card">
-      <h1>Welcome</h1>
+      <h1>欢迎</h1>
 
       <div id="liveVisual" class="hero live" hidden>
-        <h2>Live Status: ON AIR</h2>
-        <p>Realtime mode visuals are active.</p>
+        <h2>直播状态：进行中</h2>
+        <p>实时模式视觉已启用。</p>
       </div>
 
       <div id="offlineVisual" class="hero offline" hidden>
-        <h2>Live Status: OFFLINE</h2>
-        <p>Standby mode visuals are active.</p>
+        <h2>直播状态：离线</h2>
+        <p>待机模式视觉已启用。</p>
       </div>
 
-      <p>This website has three pages:</p>
+      <p>本网站包含三个页面：</p>
       <ul>
-        <li><strong>Home</strong>: this overview page.</li>
-        <li><strong>Calendar</strong>: loads events from quarter CSV files and supports month/week display.</li>
-        <li><strong>Stats</strong>: renders chats/revenue trends from the same quarterly stream CSV files.</li>
+        <li><strong>首页</strong>：总览页面。</li>
+        <li><strong>日历</strong>：从季度 CSV 文件加载活动并按月展示。</li>
+        <li><strong>统计</strong>：使用同一批季度直播 CSV 文件展示聊天量与营收趋势。</li>
       </ul>
-      <p class="small">Use the links above to switch pages.</p>
+      <p class="small">使用上方链接切换页面。</p>
     </section>
   </main>
 

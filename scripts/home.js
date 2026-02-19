@@ -7,7 +7,7 @@ async function resolveLiveStatus() {
     const result = window.checkLiveStatus();
     return typeof result?.then === 'function' ? Boolean(await result) : Boolean(result);
   } catch (error) {
-    console.warn('checkLiveStatus failed, using offline visuals:', error);
+    console.warn('checkLiveStatus 调用失败，改为离线视觉：', error);
     return false;
   }
 }

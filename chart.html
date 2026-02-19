@@ -1,47 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stats</title>
+  <title>统计</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <nav class="top-nav">
-    <a href="index.html">Home</a>
-    <a href="calendar.html">Calendar</a>
-    <a href="chart.html" aria-current="page">Stats</a>
-    <button id="themeToggleBtn" class="theme-toggle" type="button">Switch Theme</button>
+    <a href="index.html">首页</a>
+    <a href="calendar.html">日历</a>
+    <a href="chart.html" aria-current="page">统计</a>
+    <button id="themeToggleBtn" class="theme-toggle" type="button">切换主题</button>
   </nav>
 
   <main>
     <section class="card">
-      <h1>Stats</h1>
-      <p class="small">Data source: quarter files in <code>data/events-YYYY-Q#.csv</code>. Showing Number of Chats and Revenue.</p>
+      <h1>统计</h1>
+      <p class="small">数据来源：<code>data/events-YYYY-Q#.csv</code> 季度文件。显示聊天量与营收。</p>
       <div class="controls">
         <label>
-          Start date
+          开始日期
           <input id="startDate" type="date" min="2021-01-01" />
         </label>
         <label>
-          End date
+          结束日期
           <input id="endDate" type="date" min="2021-01-01" />
         </label>
-        <button id="applyRangeBtn" type="button">Apply range</button>
+        <button id="applyRangeBtn" type="button">应用范围</button>
       </div>
-      <canvas id="lineChart" width="1000" height="450" aria-label="stats line chart"></canvas>
+      <canvas id="lineChart" width="1000" height="450" aria-label="统计折线图"></canvas>
 
       <section class="streams-section">
-        <h2>Last 7 Streams</h2>
+        <h2>最近 7 场直播</h2>
         <div class="table-wrap">
           <table class="streams-table">
             <thead>
               <tr>
-                <th>Start Date</th>
-                <th>Title</th>
-                <th>Game</th>
-                <th>Total Chats</th>
-                <th>Revenue</th>
+                <th>开始日期</th>
+                <th>标题</th>
+                <th>游戏</th>
+                <th>聊天总量</th>
+                <th>营收</th>
               </tr>
             </thead>
             <tbody id="recentStreamsBody"></tbody>

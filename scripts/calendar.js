@@ -103,7 +103,7 @@ function parseCsv(csvText) {
       return {
         id: `${row.title || 'unknown'}-${row.start_date}-${index}`,
         sequence: index,
-        title: row.title?.trim() || 'Unknown',
+        title: row.title?.trim() || '未知',
         startDate: startOfDay(startDate),
         games: toList(row.game),
         tags: toList(row.tags),
@@ -113,7 +113,7 @@ function parseCsv(csvText) {
       };
     })
     .filter(Boolean)
-    .map((event) => ({ ...event, games: event.games.length ? event.games : ['Unknown'] }));
+    .map((event) => ({ ...event, games: event.games.length ? event.games : ['未知'] }));
 }
 
 function quarterFromDate(date) {
@@ -215,17 +215,17 @@ function hidePopupIfNotAnchored() {
 
 function popupHtml(event) {
   const lines = [
-    `<strong>${event.title || 'Unknown'}</strong>`,
-    `<span><b>Game:</b> ${event.games.length ? event.games.join(', ') : 'Unknown'}</span>`
+    `<strong>${event.title || '未知'}</strong>`,
+    `<span><b>游戏：</b> ${event.games.length ? event.games.join(', ') : '未知'}</span>`
   ];
 
   const start = event.startDate.toISOString().slice(0, 10);
-  lines.push(`<span><b>Date:</b> ${start}</span>`);
+  lines.push(`<span><b>日期：</b> ${start}</span>`);
 
-  if (event.tags.length) lines.push(`<span><b>Tags:</b> ${event.tags.join(', ')}</span>`);
-  if (event.numberOfChats !== null) lines.push(`<span><b>Chats:</b> ${event.numberOfChats}</span>`);
-  if (event.revenue !== null) lines.push(`<span><b>Revenue:</b> ${formatCurrency(event.revenue)}</span>`);
-  if (event.summary) lines.push(`<span><b>Summary:</b> ${event.summary}</span>`);
+  if (event.tags.length) lines.push(`<span><b>标签：</b> ${event.tags.join(', ')}</span>`);
+  if (event.numberOfChats !== null) lines.push(`<span><b>聊天量：</b> ${event.numberOfChats}</span>`);
+  if (event.revenue !== null) lines.push(`<span><b>营收：</b> ${formatCurrency(event.revenue)}</span>`);
+  if (event.summary) lines.push(`<span><b>摘要：</b> ${event.summary}</span>`);
 
   return lines.join('<br>');
 }
@@ -269,7 +269,7 @@ function appendEventsToDayContainer(container, day) {
   if (dayEvents.length > MAX_EVENTS_PER_DAY) {
     const more = document.createElement('div');
     more.className = 'event-more small';
-    more.textContent = `+${dayEvents.length - MAX_EVENTS_PER_DAY} more`;
+    more.textContent = `另有 ${dayEvents.length - MAX_EVENTS_PER_DAY} 条`;
     container.appendChild(more);
   }
 }
@@ -327,7 +327,7 @@ function renderSearchPagination(totalPages) {
   const frag = document.createDocumentFragment();
   const prev = document.createElement('button');
   prev.type = 'button';
-  prev.textContent = 'Previous';
+  prev.textContent = '上一页';
   prev.disabled = state.searchPage === 1;
   prev.addEventListener('click', () => {
     state.searchPage -= 1;
@@ -349,7 +349,7 @@ function renderSearchPagination(totalPages) {
 
   const next = document.createElement('button');
   next.type = 'button';
-  next.textContent = 'Next';
+  next.textContent = '下一页';
   next.disabled = state.searchPage === totalPages;
   next.addEventListener('click', () => {
     state.searchPage += 1;
@@ -369,7 +369,7 @@ function renderSearchResults() {
   const pageItems = state.searchResults.slice(startIndex, startIndex + SEARCH_PAGE_SIZE);
 
   if (total === 0) {
-    searchResultsEl.innerHTML = '<div class="small">No results found.</div>';
+    searchResultsEl.innerHTML = '<div class="small">未找到结果。</div>';
     searchPaginationEl.replaceChildren();
     return;
   }
@@ -382,10 +382,10 @@ function renderSearchResults() {
     const summary = event.summary || '-';
     return `<article class="search-result-item">
       <h3>${highlightMatch(event.title, query)}</h3>
-      <p><b>Date:</b> ${date}</p>
-      <p><b>Game:</b> ${highlightMatch(games, query)}</p>
-      <p><b>Tags:</b> ${highlightMatch(tags || '-', query)}</p>
-      <p><b>Summary:</b> ${highlightMatch(summary, query)}</p>
+      <p><b>日期：</b> ${date}</p>
+      <p><b>游戏：</b> ${highlightMatch(games, query)}</p>
+      <p><b>标签：</b> ${highlightMatch(tags || '-', query)}</p>
+      <p><b>摘要：</b> ${highlightMatch(summary, query)}</p>
     </article>`;
   }).join('');
 

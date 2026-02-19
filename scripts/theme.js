@@ -18,7 +18,7 @@ function updateThemeButton() {
     return;
   }
   const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-  button.textContent = theme === 'dark' ? 'Switch to Bright Mode' : 'Switch to Dark Mode';
+  button.textContent = theme === 'dark' ? '切换到明亮模式' : '切换到深色模式';
 }
 
 (function initTheme() {
